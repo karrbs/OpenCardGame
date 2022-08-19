@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ocg/components/avatar.dart';
+import 'package:ocg/models/game_model.dart';
 import 'package:ocg/utils/constants.dart';
 import 'package:ocg/widgets/bottom_nav_bar_widget.dart';
 
@@ -26,8 +27,39 @@ class _CreateGamePageState extends State<CreateGamePage> {
     final gameName = _gameNameController.text;
     final gameDesc = _gameDescriptionController.text;
     final user = supabase.auth.currentUser;
+    // GameModel newGame = GameModel(
+    //   user_profile_id: user!.id,
+    //   name: gameName,
+    //   desc: gameDesc,
+    //   avatar_url: _avatarUrl,
+    //   is_nsfw: _isNsfw,
+    // );
+
+    final inserts = {
+      'user_profile_id': user!.id,
+      'name': gameName,
+      'desc': gameDesc,
+      'avatar_url': _avatarUrl,
+      'is_nsfw': _isNsfw,
+    };
+    final response = await supabase.from('games').insert(inserts).execute();
+    final error = response.error;
+    if (error != null) {
+      context.showErrorSnackBar(message: error.message);
+    } else {
+      context.showSnackBar(message: 'Successfully created game!');
+    }
     setState(() {
+      _clearFields();
       _isLoading = false;
+    });
+  }
+
+  void _clearFields() {
+    setState(() {
+      _gameNameController.text = '';
+      _gameDescriptionController.text = '';
+      _isNsfw = false;
     });
   }
 
@@ -44,18 +76,10 @@ class _CreateGamePageState extends State<CreateGamePage> {
   }
 
   Future<void> _onUpload(String imageUrl) async {
-    final response = await supabase.from('profiles').upsert({
-      'id': _userId,
-      'avatar_url': imageUrl,
-    }).execute();
-    final error = response.error;
-    if (error != null) {
-      context.showErrorSnackBar(message: error.message);
-    }
     setState(() {
       _avatarUrl = imageUrl;
     });
-    context.showSnackBar(message: 'Updated your profile image!');
+    context.showSnackBar(message: 'Added a game Thumbnail!');
   }
 
   @override
